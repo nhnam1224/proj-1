@@ -6,14 +6,14 @@ export default class MenuScene extends Phaser.Scene {
     }
 
     create() {
-        this.add.text(400, 150, 'FUNNY HOTEL', {
+        this.add.text(400, 150, 'NO?T?LG?? ?IL??T ?O??L', {
             fontSize: '48px',
             fill: '#8b0000',
             fontFamily: 'Courier',
             fontStyle: 'bold'
         }).setOrigin(0.5);
 
-        this.add.text(400, 200, 'There is no checkout...', {
+        this.add.text(400, 200, 'Where good things believed, bad things deleted - K??le? ?ha???', {
             fontSize: '18px',
             fill: '#555555',
             fontFamily: 'Courier'
