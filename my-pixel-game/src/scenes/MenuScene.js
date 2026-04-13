@@ -6,14 +6,14 @@ export default class MenuScene extends Phaser.Scene {
     }
 
     create() {
-        this.add.text(400, 150, 'NO?T?LG?? ?IL??T ?O??L', {
+        this.add.text(400, 150, '????????? ????? ?????', {
             fontSize: '48px',
             fill: '#8b0000',
             fontFamily: 'Courier',
             fontStyle: 'bold'
         }).setOrigin(0.5);
 
-        this.add.text(400, 200, 'Where good things believed, bad things deleted - K??le? ?ha???', {
+        this.add.text(400, 200, 'J??k t?? R??p?r - Z?di?? ?il?? - A?L??d?N', {
             fontSize: '18px',
             fill: '#555555',
             fontFamily: 'Courier'
@@ -37,6 +37,11 @@ export default class MenuScene extends Phaser.Scene {
             btn.on('pointerout', () => btn.setStyle({ fill: '#ffffff' }));
         });
 
-        playBtn.on('pointerdown', () => this.scene.start('Room101Scene'));
+        playBtn.on('pointerdown', () => {
+            this.scene.start('FloorSelectScene');
+        });
+
+        settingsBtn.on('pointerdown', () => alert('Settings - Coming soon!'));
+        helpBtn.on('pointerdown', () => alert('Help - Coming soon!'));
     }
 }
