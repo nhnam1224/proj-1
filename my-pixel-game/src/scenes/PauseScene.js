@@ -33,9 +33,11 @@ export default class PauseScene extends Phaser.Scene {
         });
 
         backBtn.on('pointerdown', () => {
-            this.scene.stop();
-            // Stop all other scenes and go to Menu
-            this.scene.manager.getScenes(true).forEach(s => this.scene.stop(s.scene.key));
+            // Tìm tất cả các scene đang chạy
+            const allScenes = this.scene.manager.getScenes(false); 
+            allScenes.forEach(s => {
+                this.scene.stop(s.scene.key); // Dừng và giải phóng mọi scene
+            });
             this.scene.start('MenuScene');
         });
     }
