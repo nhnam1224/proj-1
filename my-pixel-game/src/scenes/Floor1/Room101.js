@@ -15,11 +15,6 @@ export default class Room101Scene extends Phaser.Scene {
     }
 
     create() {
-        // Room Setup
-        this.add.text(400, 30, 'ROOM 101: QUARANTINE ZONE', {
-            fontSize: '20px', fill: '#ff0000', fontFamily: 'Courier'
-        }).setOrigin(0.5);
-
         this.input.keyboard.on('keydown-ESC', () => {
             this.scene.pause(); // Dừng phòng hiện tại
             this.scene.launch('PauseScene'); // Chạy đè PauseScene lên trên
