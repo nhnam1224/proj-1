@@ -58,7 +58,7 @@ export default class Room101Scene extends Phaser.Scene {
             key: 'shoot',
             // Theo như hình ActionDude, tư thế bắn thường nằm ở dòng thứ 3 (frame 16 đến 18)
             // Nếu bạn thấy nó chạy sai hình, hãy thử đổi số start và end nhé.
-            frames: this.anims.generateFrameNumbers('player_img', { start: 72, end: 74 }), 
+            frames: this.anims.generateFrameNumbers('player_img', { start: 74, end: 76 }), 
             frameRate: 15, // Tốc độ hoạt họa bắn (nhanh hơn đi bộ xíu)
             repeat: 0 // Lặp 0 lần (nghĩa là chỉ chạy 1 lần rồi dừng)
         });
