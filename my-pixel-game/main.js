@@ -12,10 +12,11 @@ const config = {
     parent: 'game-container',
     pixelArt: true,
     backgroundColor: '#050505',
+
     physics: {
         default: 'arcade',
         arcade: {
-            gravity: { y: 0 },
+            gravity: { y: 800 },
             debug: false
         }
     },
