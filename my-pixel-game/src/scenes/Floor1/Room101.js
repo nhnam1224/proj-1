@@ -1,17 +1,10 @@
 import * as Phaser from 'phaser';
 import Player from '../../classes/Player.js';
+import { createPlayerAnims } from '../../animations/PlayerAnimations.js';
 
 export default class Room101Scene extends Phaser.Scene {
     constructor() {
         super('Room101Scene');
-    }
-
-    preload() {
-        // Tải bức ảnh và đặt tên cho nó là 'player_img'
-        this.load.spritesheet('player_img', 'characters/main/ActionDude-Spritesheet1.png', { 
-            frameWidth: 16, 
-            frameHeight: 16 
-        });
     }
 
     create() {
@@ -40,28 +33,8 @@ export default class Room101Scene extends Phaser.Scene {
         this.platforms.add(this.add.rectangle(800, 350, 150, 20, 0x666666));
         this.platforms.add(this.add.rectangle(1000, 250, 100, 20, 0x666666));
 
-        this.anims.create({
-            key: 'idle',
-            frames: [{ key: 'player_img', frame: 0 }], // Chỉ dùng 1 frame đầu tiên
-            frameRate: 10
-        });
-
-        // Tạo animation chạy (Walk)
-        this.anims.create({
-            key: 'walk',
-            frames: this.anims.generateFrameNumbers('player_img', { start: 0, end: 7 }), // Lặp từ frame 0 đến 7
-            frameRate: 10, // Tốc độ chạy (10 hình/giây)
-            repeat: -1 // Lặp lại vô hạn (-1)
-        });
-
-        this.anims.create({
-            key: 'shoot',
-            // Theo như hình ActionDude, tư thế bắn thường nằm ở dòng thứ 3 (frame 16 đến 18)
-            // Nếu bạn thấy nó chạy sai hình, hãy thử đổi số start và end nhé.
-            frames: this.anims.generateFrameNumbers('player_img', { start: 74, end: 76 }), 
-            frameRate: 15, // Tốc độ hoạt họa bắn (nhanh hơn đi bộ xíu)
-            repeat: 0 // Lặp 0 lần (nghĩa là chỉ chạy 1 lần rồi dừng)
-        });
+        // Gọi hàm để hệ thống tự động tạo toàn bộ hoạt ảnh cho Player
+        createPlayerAnims(this.anims);
 
         // 2. Gọi class Player OOP ra
         this.player = new Player(this, 400, 300, 'player_img');
