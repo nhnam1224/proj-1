@@ -5,6 +5,10 @@ export default class PauseScene extends Phaser.Scene {
         super('PauseScene');
     }
 
+    init(data) {
+        this.previousScene = data.previousScene; 
+    }
+
     create() {
         // 1. Dark overlay
         this.add.rectangle(400, 300, 800, 600, 0x000000, 0.7);
@@ -21,15 +25,18 @@ export default class PauseScene extends Phaser.Scene {
         // 3. Button Logic
         resumeBtn.on('pointerdown', () => {
             // Find which scene is currently paused and resume it
-            const currentRoom = this.scene.manager.getScenes(true).find(s => s.scene.key !== 'PauseScene');
-            if (currentRoom) {
-                this.scene.resume(currentRoom.scene.key);
-                this.scene.stop();
+            if (this.previousScene) {
+                this.scene.resume(this.previousScene);
+                this.scene.stop(); // Tắt bảng Pause
             }
         });
 
         helpBtn.on('pointerdown', () => {
-            alert("QUARANTINE RULES:\n1. UV Light -> STOP.\n2. Room 3 -> DO NOT OPEN.\n3. Noise -> LOOK AT IT.");
+            this.scene.pause(); 
+            
+            // Gọi HelpScene đè lên và báo cho nó biết mình là PauseScene
+            this.scene.launch('HelpScene', { from: 'PauseScene' }); 
+            this.scene.bringToTop('HelpScene');
         });
 
         backBtn.on('pointerdown', () => {

@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { Pistol, Shotgun, MachineGun } from '../weapons/Weapons.js';
+import { Pistol, Shotgun, Rifle } from '../weapons/Weapons.js';
 
 export default class Player extends Phaser.Physics.Arcade.Sprite {
     constructor(scene, x, y, texture) {
@@ -62,14 +62,24 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         this.inventory = {
             1: new Pistol(scene),
             2: new Shotgun(scene),
-            3: new MachineGun(scene)
+            3: new Rifle(scene)
         };
 
         this.currentWeapon = this.inventory[1];
+
+        this.weaponSprite = scene.add.sprite(this.x, this.y, this.currentWeapon.texture);
+        this.weaponSprite.setScale(2); // Phóng to súng cho vừa tay
+        this.weaponSprite.setDepth(10); // Đảm bảo súng vẽ đè lên nhân vật
     }
 
     preUpdate(time, delta) {
         super.preUpdate(time, delta);
+
+        let gunOffsetX = this.flipX ? -16 : 16; // Súng nhô ra phía trước
+        let gunOffsetY = this.isCrouching ? 22 : 12; // Cúi xuống thì súng cũng phải thấp xuống
+
+        this.weaponSprite.setPosition(this.x + gunOffsetX, this.y + gunOffsetY);
+        this.weaponSprite.setFlipX(this.flipX);
 
         // --- 1. RESET SỐ LẦN NHẢY KHI CHẠM ĐẤT ---
         if (this.body.blocked.down) {
@@ -170,7 +180,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
                 this.y += 16;
 
             }
-        } else {
+        } 
+        else {
             if (this.isCrouching) {
                 // this.isCrouching = false;
                 // this.body.setSize(10, 8); // Trả lại hitbox bình thường
@@ -201,16 +212,17 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         }
     }
 
-    shoot() {
-        if (this.currentWeapon) {
-            this.currentWeapon.fire(this);
-        }
-    }
-
     switchWeapon(slot) {
         if (this.inventory[slot]) {
             this.currentWeapon = this.inventory[slot];
+            this.weaponSprite.setTexture(this.currentWeapon.texture); // Đổi hình ảnh súng
             console.log(`Đã đổi sang vũ khí: ${this.currentWeapon.name}`);
+        }
+    }
+
+    shoot() {
+        if (this.currentWeapon) {
+            this.currentWeapon.fire(this);
         }
     }
 

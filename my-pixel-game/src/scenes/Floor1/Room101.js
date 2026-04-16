@@ -11,7 +11,7 @@ export default class Room101Scene extends Phaser.Scene {
         // Phím Pause
         this.input.keyboard.on('keydown-ESC', () => {
             this.scene.pause();
-            this.scene.launch('PauseScene');
+            this.scene.launch('PauseScene', { previousScene: this.scene.key });
             this.scene.bringToTop('PauseScene');
         });
 

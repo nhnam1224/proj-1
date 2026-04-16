@@ -6,7 +6,14 @@ export default class HelpScene extends Phaser.Scene {
         super('HelpScene');
     }
 
+    init(data) {
+        // Nếu không có ai truyền data (ví dụ ấn trực tiếp từ Menu), mặc định là 'MenuScene'
+        this.caller = data.from || 'MenuScene'; 
+    }
+
     create() {
+        this.add.rectangle(400, 300, 800, 600, 0x000000, 1);
+        
         // 1. Tiêu đề
         this.add.text(400, 80, 'HOW TO PLAY', {
             fontSize: '40px', fill: '#8b0000', fontFamily: 'Courier', fontStyle: 'bold'
@@ -27,18 +34,6 @@ export default class HelpScene extends Phaser.Scene {
             fontSize: '24px', fill: '#ffffff', fontFamily: 'Courier', align: 'left'
         }).setOrigin(0.5);
 
-        // 3. Luật sinh tồn (Giữ nguyên bản tiếng Anh cực ngầu của bạn)
-        // const rulesText = `
-        // [ QUARANTINE RULES ]
-        // 1. UV Light -> STOP.
-        // 2. Room 3 -> DO NOT OPEN.
-        // 3. Noise -> LOOK AT IT.
-        // `;
-
-        // this.add.text(400, 400, rulesText, {
-        //     fontSize: '24px', fill: '#ff5555', fontFamily: 'Courier', align: 'left'
-        // }).setOrigin(0.5);
-
         // 4. Nút quay lại Menu (Tiếng Anh)
         const backBtn = this.add.text(400, 530, '< BACK TO MENU', {
             fontSize: '28px', fill: '#888', fontFamily: 'Courier'
@@ -50,7 +45,14 @@ export default class HelpScene extends Phaser.Scene {
         
         // Sự kiện click
         backBtn.on('pointerdown', () => {
-            this.scene.start('MenuScene');
+            if (this.caller === 'MenuScene') {
+                // Nếu gọi từ Menu, chuyển cảnh hoàn toàn về Menu
+                this.scene.start('MenuScene');
+            } else {
+                // Nếu gọi từ Pause (hoặc scene khác), tắt Help đi và tiếp tục scene cũ
+                this.scene.stop(); 
+                this.scene.resume(this.caller); 
+            }
         });
     }
 }
