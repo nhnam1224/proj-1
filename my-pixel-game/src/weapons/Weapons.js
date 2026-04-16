@@ -6,10 +6,13 @@ export class Pistol {
     constructor(scene) {
         this.scene = scene;
         this.name = "Pistol";
+        this.texture = "gun_pistol";      
+        this.bulletTexture = "ammo_pistol";
         this.cooldown = 500; 
         this.damage = 10;    
         this.lastFired = 0;
-        this.bulletFrame = 419;
+        // this.bulletFrame = 419;
+
     }
 
     fire(player) {
@@ -22,7 +25,7 @@ export class Pistol {
             const offset_x = player.flipX ? -20 : 20; 
             const offset_y = player.isCrouching ? 16 : 5;
 
-            const bullet = new Bullet(this.scene, player.x + offset_x, player.y + offset_y, this.bulletFrame);
+            const bullet = new Bullet(this.scene, player.x + offset_x, player.y + offset_y, this.bulletTexture);
             bullet.fire(player.x + offset_x, player.y + offset_y, baseAngle);
 
             this.lastFired = currentTime + this.cooldown; 
@@ -35,10 +38,12 @@ export class Shotgun {
     constructor(scene) {
         this.scene = scene;
         this.name = "Shotgun";
+        this.texture = "gun_shotgun";
+        this.bulletTexture = "ammo_shotgun";
         this.cooldown = 850; // Bắn chậm hơn
         this.damage = 25;    // Bắn mạnh hơn
         this.lastFired = 0;
-        this.bulletFrame = 419;
+        // this.bulletFrame = 419;
     }
 
     fire(player) {
@@ -62,7 +67,7 @@ export class Shotgun {
 
             // Vòng lặp bắn 3 viên đạn
             spreadAngles.forEach((angle) => {
-                const bullet = new Bullet(this.scene, player.x + offset_x, player.y + offset_y, this.bulletFrame);
+                const bullet = new Bullet(this.scene, player.x + offset_x, player.y + offset_y, this.bulletTexture);
                 bullet.fire(player.x + offset_x, player.y + offset_y, angle);
             });
             
@@ -73,19 +78,21 @@ export class Shotgun {
 }
 
 // Khẩu súng số 3
-export class MachineGun {
+export class Rifle {
     constructor(scene) {
         this.scene = scene;
-        this.name = "MachineGun";
+        this.name = "Rifle";
+        this.texture = "gun_rifle";
+        this.bulletTexture = "ammo_rifle";
         this.cooldown = 200; 
         this.damage = 10;    
         this.lastFired = 0;
-        this.bulletFrame = 419;
+        // this.bulletFrame = 419;
     }
 
     fire(player) {
         let currentTime = this.scene.time.now;
-        if (currentTime > this.lastFired) {
+        if (currentTime > this.lastFired) { 
             player.anims.play('shoot', true); 
             
             const baseAngle = player.flipX ? 180 : 0; 
@@ -93,7 +100,7 @@ export class MachineGun {
             const offset_x = player.flipX ? -20 : 20; 
             const offset_y = player.isCrouching ? 16 : 5;
 
-            const bullet = new Bullet(this.scene, player.x + offset_x, player.y + offset_y, this.bulletFrame);
+            const bullet = new Bullet(this.scene, player.x + offset_x, player.y + offset_y, this.bulletTexture);
             bullet.fire(player.x + offset_x, player.y + offset_y, baseAngle);
 
             this.lastFired = currentTime + this.cooldown; 

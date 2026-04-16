@@ -22,7 +22,7 @@ export const createPlayerAnims = (anims) => {
     // 3. Bắn súng
     anims.create({
         key: 'shoot',
-        frames: anims.generateFrameNumbers('player_img', { start: 70, end: 76 }), 
+        frames: [{ key: 'player_img', frame: 0 }], 
         frameRate: 15,
         repeat: 0 
     });

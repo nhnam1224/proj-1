@@ -28,6 +28,16 @@ export default class PreloadScene extends Phaser.Scene {
             frameHeight: 16 
         });
 
+        // 2. Tải hình súng
+        this.load.image('gun_pistol', 'assets/animations/weapons/M92.png');
+        this.load.image('gun_shotgun', 'assets/animations/weapons/SawedOffShotgun.png');
+        this.load.image('gun_rifle', 'assets/animations/weapons/AK47.png');
+
+        // 3. Tải hình đạn tương ứng
+        this.load.image('ammo_pistol', 'assets/animations/bullets/PistolAmmoSmall.png');
+        this.load.image('ammo_shotgun', 'assets/animations/bullets/ShotgunShellSmall.png');
+        this.load.image('ammo_rifle', 'assets/animations/bullets/RifleAmmoSmall.png');
+
         // 3. Tải hình kẻ địch, âm thanh, v.v... sau này thêm vào đây
     }
 
