@@ -10,7 +10,7 @@ export default class RoomSelectScene extends Phaser.Scene {
     }
 
     create() {
-        this.add.text(400, 80, `FLOOR ${this.selectedFloor}: SELECT ROOM`, { 
+        this.add.text(400, 80, `SELECT ROOM`, { 
             fontSize: '32px', fill: '#8b0000', fontFamily: 'Courier' 
         }).setOrigin(0.5);
 
