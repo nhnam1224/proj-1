@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import Bullet from '../weapons/Bullet.js';
+import { Pistol, Shotgun, MachineGun } from '../weapons/Weapons.js';
 
 export default class Player extends Phaser.Physics.Arcade.Sprite {
     constructor(scene, x, y, texture) {
@@ -11,11 +11,6 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
         this.setScale(4);
         
-        // Vẽ một hình chữ nhật giả làm nhân vật
-        // this.graphics = scene.add.graphics();
-        // this.graphics.fillStyle(0xffffff, 1);
-        // this.graphics.fillRect(-16, -24, 32, 48); // Kích thước 32x48
-        
         this.body.setSize(10, 16);
         this.setCollideWorldBounds(true);
 
@@ -26,12 +21,20 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
         this.lastFired = 0;
 
+        this.jumpCount = 0; // Đếm số lần đã nhảy
+        
+        this.isDashing = false; // Đang lướt hay không
+        this.dashSpeed = 450;   // Tốc độ lướt (nhanh gấp 3 lần đi bộ)
+        this.dashEndTime = 0;   // Thời điểm kết thúc lướt
+        this.dashCooldown = 0;  // Thời điểm được lướt tiếp (Hồi chiêu)
+
         // Khai báo bộ phím chuẩn theo yêu cầu
         this.keys = scene.input.keyboard.addKeys({
             left: Phaser.Input.Keyboard.KeyCodes.A,
             right: Phaser.Input.Keyboard.KeyCodes.D,
             jump: Phaser.Input.Keyboard.KeyCodes.W,
             crouch: Phaser.Input.Keyboard.KeyCodes.S,
+            shift: Phaser.Input.Keyboard.KeyCodes.SHIFT,
             shoot: Phaser.Input.Keyboard.KeyCodes.SPACE,
             skill1: Phaser.Input.Keyboard.KeyCodes.U,
             skill2: Phaser.Input.Keyboard.KeyCodes.I,
@@ -50,16 +53,53 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         scene.input.keyboard.on('keydown-I', () => this.castSkill('I'));
         scene.input.keyboard.on('keydown-O', () => this.castSkill('O'));
         
-        for (let i = 1; i <= 6; i++) {
-            scene.input.keyboard.on(`keydown-${i}`, () => this.switchWeapon(i));
-        }
+        const numberKeys = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX'];
+        numberKeys.forEach((keyName, index) => {
+        // index chạy từ 0 -> 5, tương ứng với slot vũ khí từ 1 -> 6
+            scene.input.keyboard.on(`keydown-${keyName}`, () => this.switchWeapon(index + 1));
+        });
+
+        this.inventory = {
+            1: new Pistol(scene),
+            2: new Shotgun(scene),
+            3: new MachineGun(scene)
+        };
+
+        this.currentWeapon = this.inventory[1];
     }
 
     preUpdate(time, delta) {
         super.preUpdate(time, delta);
+
+        // --- 1. RESET SỐ LẦN NHẢY KHI CHẠM ĐẤT ---
+        if (this.body.blocked.down) {
+            this.jumpCount = 0;
+        }
+
+        // --- 2. XỬ LÝ LƯỚT (DASH) ---
+        // Bấm Shift + Đã hồi chiêu + Không cúi xuống
+        if (Phaser.Input.Keyboard.JustDown(this.keys.shift) && time > this.dashCooldown && !this.isCrouching) {
+            this.isDashing = true;
+            this.dashEndTime = time + 200;    // Thời gian lướt là 200ms
+            this.dashCooldown = time + 1000;  // Cooldown lướt là 1000ms (1 giây)
+            
+            this.body.setAllowGravity(false); // Tắt trọng lực để lướt thẳng trên không
+            this.setVelocityY(0);             // Ngừng rơi
+        }
+
+        // Nếu đang lướt, chiếm quyền điều khiển di chuyển
+        if (this.isDashing) {
+            const dashDirection = this.flipX ? -1 : 1; 
+            this.setVelocityX(dashDirection * this.dashSpeed);
+            
+            // Nếu hết thời gian lướt
+            if (time > this.dashEndTime) {
+                this.isDashing = false;
+                this.body.setAllowGravity(true); // Bật lại trọng lực
+            }
+            return; // Dừng hàm tại đây, không xử lý đi bộ / cúi / nhảy trong lúc lướt
+        }
         
-        // Đồng bộ cái hình vẽ vuông với body vật lý
-        // this.graphics.setPosition(this.x, this.y);
         let isMoving = false;
         this.setVelocityX(0);
         const isShooting = this.anims.isPlaying && this.anims.currentAnim.key === 'shoot';
@@ -77,18 +117,20 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
             isMoving = true;
         }
 
-        // // --- XỬ LÝ ANIMATION ---
-        // // Chỉ chạy animation đi/đứng khi đang chạm đất và không cúi
-        // if (this.body.blocked.down && !this.isCrouching && !isShooting) {
-        //     // Kiểm tra xem animation đã được tạo trong Scene chưa để tránh lỗi
-        //     if (this.anims.animationManager.exists('walk') && this.anims.animationManager.exists('idle')) {
-        //         if (isMoving) {
-        //             this.anims.play('walk', true); 
-        //         } else {
-        //             this.anims.play('idle', true);
-        //         }
-        //     }
-        // }
+        // --- 4. XỬ LÝ NHẢY VÀ NHẢY KÉP ---
+        // Dùng JustDown thay vì isDown để bắt buộc phải nhấp nhả phím W
+        if (Phaser.Input.Keyboard.JustDown(this.keys.jump) && !this.isCrouching) {
+            // Cho phép nhảy nếu đang ở dưới đất, HOẶC số lần nhảy đang < 2 (nghĩa là đang ở trên không và mới nhảy 1 lần)
+            if (this.body.blocked.down || this.jumpCount < 2) {
+                this.setVelocityY(this.jumpForce);
+                this.jumpCount++; 
+                
+                // Nếu đây là cú nhảy thứ 2 trên không, ép nó phát lại animation
+                if (this.jumpCount === 2) {
+                    this.anims.play('jump', true);
+                }
+            }
+        }
 
 
         if (!isShooting) {
@@ -159,66 +201,17 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
         }
     }
 
-    // shoot() {
-
-    //     // Lấy thời gian hiện tại của game
-    //     let currentTime = this.scene.time.now; 
-
-    //     // Kiểm tra Cooldown: Phải cách lần bắn trước ít nhất 300ms (0.3 giây)
-    //     if (currentTime > this.lastFired) {
-    //         // 1. CHẠY ANIMATION BẮN SÚNG
-    //         this.anims.play('shoot', true);
-
-    //         // Bắt sự kiện: Khi animation 'shoot' chạy xong thì làm gì tiếp theo?
-    //         this.once('animationcomplete-shoot', () => {
-    //             // Trả lại trạng thái đứng im (nếu nhân vật không đang di chuyển)
-    //             if (this.body.velocity.x === 0 && !this.isCrouching) {
-    //                 this.anims.play('idle', true);
-    //             }
-    //         });
-
-    //         // 2. XỬ LÝ SINH ĐẠN
-    //         const direction = this.flipX ? 'left' : 'right';
-            
-    //         // Chỉnh tọa độ nòng súng để đạn bay ra từ tay chứ không phải từ bụng
-    //         const offset_x = this.flipX ? -20 : 20; // Dịch đạn ra đằng trước
-    //         const offset_y = 5; // Dịch đạn xuống dưới 1 chút cho khớp tay
-
-    //         // Gọi đạn từ class Bullet (bạn đã code sẵn)
-    //         const bullet = new Bullet(this.scene, this.x + offset_x, this.y + offset_y);
-    //         bullet.fire(this.x + offset_x, this.y + offset_y, direction);
-            
-    //         console.log("Pằng! Đã bắn 1 viên đạn.");
-
-    //         // 3. CẬP NHẬT COOLDOWN
-    //         // Gán lại thời gian: 300ms sau mới được phép bắn phát tiếp theo
-    //         this.lastFired = currentTime + 300; 
-    //     }
-    // }
-
     shoot() {
-        let currentTime = this.scene.time.now; 
-
-        if (currentTime > this.lastFired) {
-            
-            // Ép chạy hoạt ảnh bắn súng ngay lập tức
-            this.anims.play('shoot', true);
-
-            const direction = this.flipX ? 'left' : 'right';
-            const offset_x = this.flipX ? -20 : 20; 
-            
-            // SỬA LỖI ĐẠN: Nếu đang cúi thì nòng súng bị lùn xuống, đạn phải sinh ra thấp hơn
-            const offset_y = this.isCrouching ? 16 : 5; 
-
-            const bullet = new Bullet(this.scene, this.x + offset_x, this.y + offset_y);
-            bullet.fire(this.x + offset_x, this.y + offset_y, direction);
-
-            this.lastFired = currentTime + 300; 
+        if (this.currentWeapon) {
+            this.currentWeapon.fire(this);
         }
     }
 
     switchWeapon(slot) {
-        console.log(`Đổi sang vũ khí ô số ${slot}`);
+        if (this.inventory[slot]) {
+            this.currentWeapon = this.inventory[slot];
+            console.log(`Đã đổi sang vũ khí: ${this.currentWeapon.name}`);
+        }
     }
 
     castSkill(skillKey) {
