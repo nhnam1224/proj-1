@@ -1,5 +1,8 @@
 import * as Phaser from 'phaser';
+import PreloadScene from './src/scenes/PreloadScene.js';
 import MenuScene from './src/scenes/MenuScene.js';
+import HelpScene from './src/scenes/HelpScene.js';
+import AboutScene from './src/scenes/AboutScene.js';
 import PauseScene from './src/scenes/PauseScene.js';
 import FloorSelectScene from './src/scenes/FloorSelectScene.js';
 import RoomSelectScene from './src/scenes/RoomSelectScene.js';
@@ -21,7 +24,7 @@ const config = {
         }
     },
     // The order determines which scene starts first
-    scene: [MenuScene, FloorSelectScene, RoomSelectScene, PauseScene, Room101Scene]
+    scene: [PreloadScene, MenuScene, HelpScene, AboutScene, FloorSelectScene, RoomSelectScene, PauseScene, Room101Scene]
 };
 
 new Phaser.Game(config);
