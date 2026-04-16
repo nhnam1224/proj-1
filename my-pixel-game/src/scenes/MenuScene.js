@@ -31,7 +31,11 @@ export default class MenuScene extends Phaser.Scene {
             fontSize: '32px', fill: '#ffffff', fontFamily: 'Courier'
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
-        const buttons = [playBtn, settingsBtn, helpBtn];
+        const aboutBtn = this.add.text(400, 540, '[ ABOUT ]', {
+            fontSize: '32px', fill: '#ffffff', fontFamily: 'Courier'
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+        const buttons = [playBtn, settingsBtn, helpBtn, aboutBtn];
         buttons.forEach(btn => {
             btn.on('pointerover', () => btn.setStyle({ fill: '#ff0000' }));
             btn.on('pointerout', () => btn.setStyle({ fill: '#ffffff' }));
@@ -42,6 +46,12 @@ export default class MenuScene extends Phaser.Scene {
         });
 
         settingsBtn.on('pointerdown', () => alert('Settings - Coming soon!'));
-        helpBtn.on('pointerdown', () => alert('Help - Coming soon!'));
+        helpBtn.on('pointerdown', () => {
+            this.scene.start('HelpScene');
+        });
+
+        aboutBtn.on('pointerdown', () => {
+            this.scene.start('AboutScene');
+        });
     }
 }
