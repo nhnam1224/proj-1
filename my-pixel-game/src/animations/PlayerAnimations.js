@@ -1,43 +1,10 @@
-// Đường dẫn: src/animations/PlayerAnimations.js
-
-export const createPlayerAnims = (anims) => {
-    // Tránh việc tạo đi tạo lại gây lỗi bộ nhớ
-    if (anims.exists('idle')) return;
-
-    // 1. Đứng yên
-    anims.create({
-        key: 'idle',
-        frames: [{ key: 'player_img', frame: 0 }], 
-        frameRate: 10
-    });
-
-    // 2. Đi bộ
-    anims.create({
-        key: 'walk',
-        frames: anims.generateFrameNumbers('player_img', { start: 0, end: 7 }),
-        frameRate: 10,
-        repeat: -1 
-    });
-
-    // 3. Bắn súng
-    anims.create({
-        key: 'shoot',
-        frames: [{ key: 'player_img', frame: 0 }], 
-        frameRate: 15,
-        repeat: 0 
-    });
-
-    // 4. Nhảy (Tạm lấy frame số 10, bạn có thể xem ảnh spritesheet để đổi số cho đúng)
-    anims.create({
-        key: 'jump',
-        frames: anims.generateFrameNumbers('player_img', { start: 24, end: 29 }), 
-        frameRate: 10
-    });
-
-    // 5. Cúi (Tạm lấy frame số 15)
-    anims.create({
-        key: 'crouch',
-        frames: anims.generateFrameNumbers('player_img', { start: 6, end: 7 }), 
-        frameRate: 10
-    });
+export const createPlayerAnimations = (scene) => {
+    // Soldier Animations
+    scene.anims.create({ key: 'soldier_idle_anim', frames: scene.anims.generateFrameNumbers('soldier_idle'), frameRate: 8, repeat: -1 });
+    scene.anims.create({ key: 'soldier_walk_anim', frames: scene.anims.generateFrameNumbers('soldier_walk'), frameRate: 10, repeat: -1 });
+    scene.anims.create({ key: 'soldier_hurt_anim', frames: scene.anims.generateFrameNumbers('soldier_hurt'), frameRate: 10, repeat: 0 });
+    scene.anims.create({ key: 'soldier_death_anim', frames: scene.anims.generateFrameNumbers('soldier_death'), frameRate: 10, repeat: 0 });
+    scene.anims.create({ key: 'soldier_attack_anim', frames: scene.anims.generateFrameNumbers('soldier_attack'), frameRate: 15, repeat: 0 }); // Chém 1 lần rồi dừng
+    scene.anims.create({ key: 'soldier_attack2_anim', frames: scene.anims.generateFrameNumbers('soldier_attack2'), frameRate: 15, repeat: 0 });
+    scene.anims.create({ key: 'soldier_attack3_anim', frames: scene.anims.generateFrameNumbers('soldier_attack3'), frameRate: 15, repeat: 0 });
 };
