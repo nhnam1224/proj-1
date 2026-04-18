@@ -1,61 +1,81 @@
 import * as Phaser from 'phaser';
 import Player from '../../classes/Player.js';
-import { createPlayerAnims } from '../../animations/PlayerAnimations.js';
+import Orc from '../../classes/enemy/Orc.js';
+import { createPlayerAnimations } from '../../animations/PlayerAnimations.js';
+import { createOrcAnimations } from '../../animations/enemy/OrcAnimations.js';
 
-export default class Room101Scene extends Phaser.Scene {
+export default class Room101 extends Phaser.Scene {
     constructor() {
-        super('Room101Scene');
+        super('Room101');
     }
 
     create() {
-        // Phím Pause
+        createPlayerAnimations(this);
+        createOrcAnimations(this);
+
         this.input.keyboard.on('keydown-ESC', () => {
-            this.scene.pause();
-            this.scene.launch('PauseScene', { previousScene: this.scene.key });
-            this.scene.bringToTop('PauseScene');
+            this.scene.pause(); // Dừng hoàn toàn mọi logic/vật lý ở Room101
+            this.scene.launch('PauseScene', { previousScene: this.scene.key }); // Bật PauseScene lên chạy đè ở lớp trên
         });
 
-        // --- BƯỚC 1: MỞ RỘNG THẾ GIỚI GAME ---
-        // Chiều dài map bây giờ là 2000 pixel, chiều cao vẫn là 600
-        const mapWidth = 3000;
-        const mapHeight = 600;
-        this.physics.world.setBounds(0, 0, mapWidth, mapHeight);
+        // 1. Tạo Group chứa toàn bộ kẻ địch để check va chạm
+        this.enemiesGroup = this.physics.add.group();
 
-        // 1. Tạo mặt đất (Nền tảng tĩnh - Static Group)
-        this.platforms = this.physics.add.staticGroup();
-        
-        // Vẽ một hình chữ nhật dài làm sàn nhà ở đáy màn hình
-        const ground = this.add.rectangle(mapWidth / 2, 580, mapWidth, 40, 0x444444);
-        this.platforms.add(ground);
+        // 2. Spawn Người chơi
+        this.player = new Player(this, 400, 300);
 
-        // (Tùy chọn) Thêm một vài bục nhảy rải rác trên đường để thấy rõ camera đang di chuyển
-        this.platforms.add(this.add.rectangle(600, 450, 100, 20, 0x666666));
-        this.platforms.add(this.add.rectangle(800, 350, 150, 20, 0x666666));
-        this.platforms.add(this.add.rectangle(1000, 250, 100, 20, 0x666666));
+        // 3. Spawn bọn Orc (Bạn có thể ném bao nhiêu con tùy thích)
+        const orc1 = new Orc(this, 100, 100);
+        orc1.setTarget(this.player); // Bảo con Orc đuổi theo player
+        this.enemiesGroup.add(orc1);
 
-        // Gọi hàm để hệ thống tự động tạo toàn bộ hoạt ảnh cho Player
-        createPlayerAnims(this.anims);
+        const orc2 = new Orc(this, 700, 500);
+        orc2.setTarget(this.player);
+        this.enemiesGroup.add(orc2);
 
-        // 2. Gọi class Player OOP ra
-        this.player = new Player(this, 400, 300, 'player_img');
+        const orc3 = new Orc(this, 300, 400);
+        orc3.setTarget(this.player);
+        this.enemiesGroup.add(orc3);
 
-        // Bật Camera bám theo nhân vật
-        this.cameras.main.setBounds(0, 0, mapWidth, mapHeight); // Khung camera không được vượt ra ngoài map
+        const orc4 = new Orc(this, 200, 200);
+        orc4.setTarget(this.player);
+        this.enemiesGroup.add(orc4);
 
-        // Cú pháp: startFollow(mục_tiêu, làm_tròn_pixel, tốc_độ_trượt_x, tốc_độ_trượt_y)
-        // Số 0.05 tạo cảm giác camera lướt theo nhịp nhàng (smooth follow) chứ không bị cứng ngắc
+        const orc5 = new Orc(this, 800, 400);
+        orc5.setTarget(this.player);
+        this.enemiesGroup.add(orc5);
+
+        // 4. Các setup khác (Tường, Camera, v.v...)
         this.cameras.main.startFollow(this.player, true, 0.05, 0.05);
-
-        
-
-        // ... (code va chạm)
-
-        // 3. Thêm va chạm giữa Player và Mặt đất để không bị rơi lủng màn hình
-        this.physics.add.collider(this.player, this.platforms);
     }
 
-    update(time, delta) {
-        // Không cần viết code di chuyển ở đây nữa vì Player.js đã lo liệu
-        // Các logic môi trường khác sẽ đặt ở đây
+    update() {
+        if (this.player) this.player.update();
+        
+        // Cập nhật AI cho từng con quái trong group
+        this.enemiesGroup.getChildren().forEach(enemy => {
+            enemy.update();
+        });
+
+        // Nếu phòng chưa clear và trong phòng có ít nhất 1 con quái
+        if (!this.isRoomCleared && this.enemiesGroup.getChildren().length > 0) {
+            
+            // Dùng hàm every() để kiểm tra: "Có phải tất cả (every) quái đều có isDead == true không?"
+            const isAllDead = this.enemiesGroup.getChildren().every(enemy => enemy.isDead);
+            
+            if (isAllDead) {
+                this.isRoomCleared = true; // Chốt hạ là đã qua màn, không chạy lệnh này thêm nữa
+                
+                // Chờ 2 giây sau khi con quái cuối cùng ngã xuống mới hiện bảng Victory
+                this.time.delayedCall(2000, () => {
+                    this.scene.pause(); 
+                    // Gọi VictoryScene, truyền tên phòng hiện tại và phòng tiếp theo
+                    this.scene.launch('VictoryScene', { 
+                        currentScene: 'Room101', 
+                        nextScene: 'Room102' // Thay bằng tên Scene phòng tiếp theo của bạn (nếu có)
+                    });
+                });
+            }
+        }
     }
 }
