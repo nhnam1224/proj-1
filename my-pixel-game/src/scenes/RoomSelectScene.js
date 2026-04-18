@@ -26,7 +26,7 @@ export default class RoomSelectScene extends Phaser.Scene {
 
             btn.on('pointerdown', () => {
                 if (roomNumber === 101) {
-                    this.scene.start('Room101Scene');
+                    this.scene.start('Room101');
                 } else {
                     alert(`Room ${roomNumber} is currently under construction!`);
                 }
