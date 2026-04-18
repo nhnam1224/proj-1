@@ -20,7 +20,8 @@ export default class PauseScene extends Phaser.Scene {
         // 2. Buttons
         const resumeBtn = this.createButton(400, 250, '[ RESUME ]', '#ffffff');
         const helpBtn = this.createButton(400, 330, '[ HELP ]', '#ffffff');
-        const backBtn = this.createButton(400, 410, '[ BACK TO MENU ]', '#ff0000');
+        const restartBtn = this.createButton(400, 410, '[ RESTART ]', '#ffffff');
+        const backBtn = this.createButton(400, 500, '[ BACK TO ROOM SELECT ]', '#ff0000');
 
         // 3. Button Logic
         resumeBtn.on('pointerdown', () => {
@@ -39,13 +40,33 @@ export default class PauseScene extends Phaser.Scene {
             this.scene.bringToTop('HelpScene');
         });
 
+        restartBtn.on('pointerdown', () => {
+            if (this.previousScene) {
+                // 1. Dừng hẳn cái scene cũ (Room101) đang bị Pause ở bên dưới
+                this.scene.stop(this.previousScene); 
+                
+                // 2. Chạy lại scene đó từ đầu (reset lại toàn bộ vị trí, quái, máu...)
+                this.scene.start(this.previousScene); 
+                
+                // 3. Tắt luôn cái bảng Pause này đi
+                this.scene.stop(); 
+            }
+        });
+
         backBtn.on('pointerdown', () => {
             // Tìm tất cả các scene đang chạy
             const allScenes = this.scene.manager.getScenes(false); 
             allScenes.forEach(s => {
                 this.scene.stop(s.scene.key); // Dừng và giải phóng mọi scene
             });
-            this.scene.start('MenuScene');
+            this.scene.start('RoomSelectScene');
+        });
+
+        this.input.keyboard.on('keydown-ESC', () => {
+            if (this.previousScene) {
+                this.scene.resume(this.previousScene);
+                this.scene.stop(); // Tắt bảng Pause
+            }
         });
     }
 
