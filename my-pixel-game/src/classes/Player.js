@@ -1,232 +1,174 @@
 import * as Phaser from 'phaser';
-import { Pistol, Shotgun, Rifle } from '../weapons/Weapons.js';
+import Entity from './Entity.js';
 
-export default class Player extends Phaser.Physics.Arcade.Sprite {
-    constructor(scene, x, y, texture) {
-        // Tạm thời dùng hình chữ nhật trắng nếu chưa có sprite
-        super(scene, x, y, texture);
-        
-        scene.add.existing(this);
-        scene.physics.add.existing(this);
+export default class Player extends Entity {
+    constructor(scene, x, y) {
+        super(scene, x, y, 'soldier_idle'); // Dùng class Entity cha
+        this.hp = 100;
 
-        this.setScale(4);
-        
-        this.body.setSize(10, 16);
-        this.setCollideWorldBounds(true);
+        this.speed = 150;
+        this.attackDamage = 25;
+        this.isAttacking = false;
+        this.weaponType = 1;
 
-        // Các chỉ số cơ bản
-        this.speed = 200;
-        this.jumpForce = -500;
-        this.isCrouching = false;
+        this.lastDirX = 1;
+        this.lastDirY = 0;
 
-        this.lastFired = 0;
+        this.keys = scene.input.keyboard.addKeys('W,A,S,D');
 
-        this.jumpCount = 0; // Đếm số lần đã nhảy
-        
-        this.isDashing = false; // Đang lướt hay không
-        this.dashSpeed = 450;   // Tốc độ lướt (nhanh gấp 3 lần đi bộ)
-        this.dashEndTime = 0;   // Thời điểm kết thúc lướt
-        this.dashCooldown = 0;  // Thời điểm được lướt tiếp (Hồi chiêu)
-
-        // Khai báo bộ phím chuẩn theo yêu cầu
-        this.keys = scene.input.keyboard.addKeys({
-            left: Phaser.Input.Keyboard.KeyCodes.A,
-            right: Phaser.Input.Keyboard.KeyCodes.D,
-            jump: Phaser.Input.Keyboard.KeyCodes.W,
-            crouch: Phaser.Input.Keyboard.KeyCodes.S,
-            shift: Phaser.Input.Keyboard.KeyCodes.SHIFT,
-            shoot: Phaser.Input.Keyboard.KeyCodes.SPACE,
-            skill1: Phaser.Input.Keyboard.KeyCodes.U,
-            skill2: Phaser.Input.Keyboard.KeyCodes.I,
-            skill3: Phaser.Input.Keyboard.KeyCodes.O,
-            wep1: Phaser.Input.Keyboard.KeyCodes.ONE,
-            wep2: Phaser.Input.Keyboard.KeyCodes.TWO,
-            wep3: Phaser.Input.Keyboard.KeyCodes.THREE,
-            wep4: Phaser.Input.Keyboard.KeyCodes.FOUR,
-            wep5: Phaser.Input.Keyboard.KeyCodes.FIVE,
-            wep6: Phaser.Input.Keyboard.KeyCodes.SIX
+        // Bấm chuột trái để chém kiếm
+        scene.input.keyboard.on('keydown-SPACE', () => {
+            this.attack();
         });
 
-        // Bắt sự kiện bấm phím 1 lần (để không bị spam khi đè phím)
-        scene.input.keyboard.on('keydown-SPACE', () => this.shoot());
-        scene.input.keyboard.on('keydown-U', () => this.castSkill('U'));
-        scene.input.keyboard.on('keydown-I', () => this.castSkill('I'));
-        scene.input.keyboard.on('keydown-O', () => this.castSkill('O'));
-        
-        const numberKeys = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX'];
-        numberKeys.forEach((keyName, index) => {
-        // index chạy từ 0 -> 5, tương ứng với slot vũ khí từ 1 -> 6
-            scene.input.keyboard.on(`keydown-${keyName}`, () => this.switchWeapon(index + 1));
+        scene.input.keyboard.on('keydown-ONE', () => { 
+            this.weaponType = 1; 
+            console.log("Đã đổi sang Vũ khí 1 (Chém 1)"); 
         });
-
-        this.inventory = {
-            1: new Pistol(scene),
-            2: new Shotgun(scene),
-            3: new Rifle(scene)
-        };
-
-        this.currentWeapon = this.inventory[1];
-
-        this.weaponSprite = scene.add.sprite(this.x, this.y, this.currentWeapon.texture);
-        this.weaponSprite.setScale(2); // Phóng to súng cho vừa tay
-        this.weaponSprite.setDepth(10); // Đảm bảo súng vẽ đè lên nhân vật
+        
+        scene.input.keyboard.on('keydown-TWO', () => { 
+            this.weaponType = 2; 
+            console.log("Đã đổi sang Vũ khí 2 (Chém 2)"); 
+        });
+        
+        scene.input.keyboard.on('keydown-THREE', () => { 
+            this.weaponType = 3; 
+            console.log("Đã đổi sang Vũ khí 3 (Bắn cung)"); 
+        });
     }
 
-    preUpdate(time, delta) {
-        super.preUpdate(time, delta);
+    update() {
+        if (this.isDead || this.isAttacking || this.isHurt) return; // Đang chém hoặc chết thì không đi lại
 
-        let gunOffsetX = this.flipX ? -16 : 16; // Súng nhô ra phía trước
-        let gunOffsetY = this.isCrouching ? 22 : 12; // Cúi xuống thì súng cũng phải thấp xuống
+        let vx = 0; let vy = 0;
 
-        this.weaponSprite.setPosition(this.x + gunOffsetX, this.y + gunOffsetY);
-        this.weaponSprite.setFlipX(this.flipX);
+        if (this.keys.A.isDown) vx = -this.speed;
+        if (this.keys.D.isDown) vx = this.speed;
+        if (this.keys.W.isDown) vy = -this.speed;
+        if (this.keys.S.isDown) vy = this.speed;
 
-        // --- 1. RESET SỐ LẦN NHẢY KHI CHẠM ĐẤT ---
-        if (this.body.blocked.down) {
-            this.jumpCount = 0;
+        // Chuẩn hóa vector: Giúp việc đi chéo (Vd: bấm W + D) không bị chạy nhanh gấp rưỡi
+        const length = Math.sqrt(vx * vx + vy * vy);
+        if (length > 0) {
+            vx = (vx / length) * this.speed;
+            vy = (vy / length) * this.speed;
+
+            this.lastDirX = vx / this.speed;
+            this.lastDirY = vy / this.speed;
         }
 
-        // --- 2. XỬ LÝ LƯỚT (DASH) ---
-        // Bấm Shift + Đã hồi chiêu + Không cúi xuống
-        if (Phaser.Input.Keyboard.JustDown(this.keys.shift) && time > this.dashCooldown && !this.isCrouching) {
-            this.isDashing = true;
-            this.dashEndTime = time + 200;    // Thời gian lướt là 200ms
-            this.dashCooldown = time + 1000;  // Cooldown lướt là 1000ms (1 giây)
-            
-            this.body.setAllowGravity(false); // Tắt trọng lực để lướt thẳng trên không
-            this.setVelocityY(0);             // Ngừng rơi
-        }
+        this.setVelocity(vx, vy);
 
-        // Nếu đang lướt, chiếm quyền điều khiển di chuyển
-        if (this.isDashing) {
-            const dashDirection = this.flipX ? -1 : 1; 
-            this.setVelocityX(dashDirection * this.dashSpeed);
-            
-            // Nếu hết thời gian lướt
-            if (time > this.dashEndTime) {
-                this.isDashing = false;
-                this.body.setAllowGravity(true); // Bật lại trọng lực
-            }
-            return; // Dừng hàm tại đây, không xử lý đi bộ / cúi / nhảy trong lúc lướt
-        }
-        
-        let isMoving = false;
-        this.setVelocityX(0);
-        const isShooting = this.anims.isPlaying && this.anims.currentAnim.key === 'shoot';
-
-        // A và D: Di chuyển trái/phải
-        if (this.keys.left.isDown && !this.isCrouching) {
-            this.setVelocityX(-this.speed);
-            this.flipX = true;
-            isMoving = true;
-        } 
-
-        else if (this.keys.right.isDown && !this.isCrouching) {
-            this.setVelocityX(this.speed);
-            this.flipX = false;
-            isMoving = true;
-        }
-
-        // --- 4. XỬ LÝ NHẢY VÀ NHẢY KÉP ---
-        // Dùng JustDown thay vì isDown để bắt buộc phải nhấp nhả phím W
-        if (Phaser.Input.Keyboard.JustDown(this.keys.jump) && !this.isCrouching) {
-            // Cho phép nhảy nếu đang ở dưới đất, HOẶC số lần nhảy đang < 2 (nghĩa là đang ở trên không và mới nhảy 1 lần)
-            if (this.body.blocked.down || this.jumpCount < 2) {
-                this.setVelocityY(this.jumpForce);
-                this.jumpCount++; 
-                
-                // Nếu đây là cú nhảy thứ 2 trên không, ép nó phát lại animation
-                if (this.jumpCount === 2) {
-                    this.anims.play('jump', true);
-                }
-            }
-        }
-
-
-        if (!isShooting) {
-            if (!this.body.blocked.down) {
-                this.anims.play('jump', true); // Đang trên không -> Nhảy
-            } else if (this.isCrouching) {
-                this.anims.play('crouch', true); // Đang giữ phím S -> Cúi
-            } else if (isMoving) {
-                this.anims.play('walk', true); // Đang giữ A/D -> Đi bộ
-            } else {
-                this.anims.play('idle', true); // Không làm gì -> Đứng thở
-            }
-        }
-
-        // S: Cúi xuống (Cúi thì không cho đi)
-        if (this.keys.crouch.isDown) {
-            if (!this.isCrouching) {
-                // this.isCrouching = true;
-                // this.body.setSize(10, 8); // Thu nhỏ hitbox còn một nửa
-                // this.y += 16;
-                // // this.body.setOffset(0, 24);
-                // // this.graphics.clear().fillStyle(0xffffff, 1).fillRect(-16, 0, 32, 24);
-                // this.scaleY = 2;
-
-                this.isCrouching = true;
-                
-                // 1. Ép lùn nhân vật xuống (từ scale gốc 4 xuống còn 2)
-                this.scaleY = 2; 
-                
-                // 2. Chỉnh hitbox lùn đi (chiều ngang 10, chiều cao giảm còn 8)
-                this.body.setSize(10, 8); 
-                
-                // 3. Đẩy hitbox dời xuống phần chân (trục X giữ nguyên 3, trục Y đẩy xuống 8)
-                this.body.setOffset(3, 8); 
-                
-                // 4. Bù lại tọa độ Y để chân nhân vật vẫn bám đất
-                this.y += 16;
-
-            }
+        // Chạy animation di chuyển
+        if (vx !== 0 || vy !== 0) {
+            this.play('soldier_walk_anim', true);
+            if (vx < 0) this.setFlipX(true);
+            else if (vx > 0) this.setFlipX(false);
         } 
         else {
-            if (this.isCrouching) {
-                // this.isCrouching = false;
-                // this.body.setSize(10, 8); // Trả lại hitbox bình thường
-                // this.y -= 16;
-                // // this.body.setOffset(0, 0);
-                // // this.graphics.clear().fillStyle(0xffffff, 1).fillRect(-16, -24, 32, 48);
-                // this.scaleY = 4;
-
-                this.isCrouching = false;
-                
-                // 1. Trả lại scale ban đầu là 4 (lỗi của bạn nằm ở đây)
-                this.scaleY = 4; 
-                
-                // 2. Trả lại hitbox mặc định như lúc mới sinh ra
-                this.body.setSize(10, 16); 
-                
-                // 3. Trả lại offset mặc định
-                this.body.setOffset(3, 0); 
-                
-                // 4. Kéo nhân vật lên lại để không bị lún sàn
-                this.y -= 16;
-            }
-        }
-
-        // W: Nhảy (Chỉ nhảy khi đang đứng trên mặt đất)
-        if (this.keys.jump.isDown && this.body.blocked.down && !this.isCrouching) {
-            this.setVelocityY(this.jumpForce);
+            this.play('soldier_idle_anim', true);
         }
     }
 
-    switchWeapon(slot) {
-        if (this.inventory[slot]) {
-            this.currentWeapon = this.inventory[slot];
-            this.weaponSprite.setTexture(this.currentWeapon.texture); // Đổi hình ảnh súng
-            console.log(`Đã đổi sang vũ khí: ${this.currentWeapon.name}`);
-        }
+    attack() {
+        if (this.isAttacking || this.isDead) return;
+
+        this.isAttacking = true;
+        this.setVelocity(0, 0); // Đứng lại khi chém
+
+        if (this.weaponType === 1) this.play('soldier_attack_anim');
+        else if (this.weaponType === 2) this.play('soldier_attack2_anim');
+        else if (this.weaponType === 3) this.play('soldier_attack3_anim');
+
+        // TẠO HITBOX CHÉM KIẾM TÀNG HÌNH (Rộng 40px, cao 50px)
+        // const direction = this.flipX ? -1 : 1;
+        // ==========================================
+        // VŨ KHÍ 1 & 2: CHÉM CẬN CHIẾN (MELEE)
+        // ==========================================
+        if (this.weaponType === 1 || this.weaponType === 2) {
+            const hitboxX = this.x + (this.lastDirX * 40); 
+            const hitboxY = this.y - 10 + (this.lastDirY * 40); 
+
+            const hitbox = this.scene.add.circle(hitboxX, hitboxY, 25, 0xff0000, 0); 
+            this.scene.physics.add.existing(hitbox);
+            hitbox.body.setAllowGravity(false);
+            hitbox.body.setCircle(25);
+
+            hitbox.enemiesHit = [];
+
+            const meleeCollider = this.scene.physics.add.overlap(hitbox, this.scene.enemiesGroup, (box, enemy) => {
+                if (!box.enemiesHit.includes(enemy)) {
+                    enemy.takeDamage(this.attackDamage);
+                    box.enemiesHit.push(enemy); 
+                }
+            });
+
+            this.scene.time.delayedCall(150, () => {
+                if (hitbox.active) {
+                    meleeCollider.destroy(); // Hủy trạm gác
+                    hitbox.destroy(); // Hủy hitbox
+                }
+            });
+        } 
+        // ==========================================
+        // VŨ KHÍ 3: BẮN CUNG (RANGED)
+        // ==========================================
+        else if (this.weaponType === 3) {
+            this.scene.time.delayedCall(480, () => {
+                if (this.isDead || this.isHurt) return;
+                // Tọa độ sinh ra mũi tên (ngay trước mặt Player)
+                const arrowX = this.x + (this.lastDirX * 40);
+                const arrowY = this.y - 10 + (this.lastDirY * 40); 
+
+                // Tạo Sprite mũi tên và bật vật lý cho nó
+                const arrow = this.scene.physics.add.sprite(arrowX, arrowY, 'arrow');
+                arrow.setScale(1.5); // Phóng to mũi tên bằng kích thước nhân vật
+                arrow.body.setAllowGravity(false); // Không bị rơi rớt
+
+                // Bắn đạn theo vector 8 hướng
+                arrow.setVelocity(this.lastDirX * 450, this.lastDirY * 450);
+
+                // QUAN TRỌNG: Xoay hình ảnh mũi tên hướng về phía đang bay
+                arrow.rotation = Math.atan2(this.lastDirY, this.lastDirX);
+
+                // Dùng Hitbox hình tròn nhỏ ngay đầu mũi tên (Bán kính 10, đẩy tâm ra 40x40)
+                arrow.body.setCircle(10, 40, 40);
+
+                const arrowCollider = this.scene.physics.add.overlap(arrow, this.scene.enemiesGroup, (arr, enemy) => {
+                    enemy.takeDamage(this.attackDamage); 
+                    arr.destroy(); 
+                    arrowCollider.destroy(); 
+                });
+
+                this.scene.time.delayedCall(1500, () => {
+                    if (arrow.active) {
+                        arrowCollider.destroy();
+                        arrow.destroy();
+                    }
+                });
+            });      
+        };
+
+        // Hết animation tấn công thì cho phép thao tác lại
+        this.once('animationcomplete', () => {
+            this.isAttacking = false;
+        });
     }
 
-    shoot() {
-        if (this.currentWeapon) {
-            this.currentWeapon.fire(this);
-        }
+    playHurtAnim() {
+        this.isAttacking = false;
+        this.play('soldier_hurt_anim');
     }
 
-    castSkill(skillKey) {
-        console.log(`Dùng skill: ${skillKey}`);
+    playDeathAnim() {
+        this.play('soldier_death_anim');
+        this.setVelocity(0, 0);
+        
+        // 2 giây sau khi ngã xuống thì in ra console (hoặc chuyển scene)
+        this.scene.time.delayedCall(2000, () => {
+            const currentRoomName = this.scene.sys.settings.key; 
+            
+            this.scene.scene.launch('GameOverScene', { previousScene: currentRoomName });
+        });
     }
 }
