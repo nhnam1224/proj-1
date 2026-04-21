@@ -27,7 +27,7 @@ const config = {
     },
     // The order determines which scene starts first
     scene: [PreloadScene, MenuScene, HelpScene, AboutScene, FloorSelectScene, 
-            RoomSelectScene, PauseScene, GameOverScene, VictoryScene, Room101]
+            RoomSelectScene, Room101, PauseScene, GameOverScene, VictoryScene]
 };
 
 new Phaser.Game(config);

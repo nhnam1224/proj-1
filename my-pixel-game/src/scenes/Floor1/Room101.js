@@ -18,15 +18,34 @@ export default class Room101 extends Phaser.Scene {
             this.scene.launch('PauseScene', { previousScene: this.scene.key }); // Bật PauseScene lên chạy đè ở lớp trên
         });
 
-        // 1. Tạo Group chứa toàn bộ kẻ địch để check va chạm
+        // ==========================================
+        // BƯỚC 1: TẠO MAP TRƯỚC
+        // ==========================================
+        const map = this.make.tilemap({ key: 'desert_map' });
+        const tileset = map.addTilesetImage('DesertTilemapBlankBackground', 'desert_tiles');
+
+        const groundLayer = map.createLayer('Grounds', tileset, 0, 0);
+        this.obstacleLayer = map.createLayer('Obstacles', tileset, 0, 0);
+
+        const mapScale = 1.5; 
+        groundLayer.setScale(mapScale);
+        this.obstacleLayer.setScale(mapScale);
+
+        const actualMapWidth = map.widthInPixels * mapScale;
+        const actualMapHeight = map.heightInPixels * mapScale;
+        this.cameras.main.setBounds(0, 0, actualMapWidth, actualMapHeight);
+        this.physics.world.setBounds(0, 0, actualMapWidth, actualMapHeight);
+
+        // ==========================================
+        // BƯỚC 2: SINH RA NHÂN VẬT VÀ QUÁI VẬT
+        // ==========================================
         this.enemiesGroup = this.physics.add.group();
 
-        // 2. Spawn Người chơi
+        // Giờ thì this.player đã chính thức tồn tại
         this.player = new Player(this, 400, 300);
 
-        // 3. Spawn bọn Orc (Bạn có thể ném bao nhiêu con tùy thích)
         const orc1 = new Orc(this, 100, 100);
-        orc1.setTarget(this.player); // Bảo con Orc đuổi theo player
+        orc1.setTarget(this.player); 
         this.enemiesGroup.add(orc1);
 
         const orc2 = new Orc(this, 700, 500);
@@ -45,8 +64,20 @@ export default class Room101 extends Phaser.Scene {
         orc5.setTarget(this.player);
         this.enemiesGroup.add(orc5);
 
-        // 4. Các setup khác (Tường, Camera, v.v...)
-        this.cameras.main.startFollow(this.player, true, 0.05, 0.05);
+        // ==========================================
+        // BƯỚC 3: SET CAMERA VÀ VA CHẠM (Sau khi mọi thứ đã có mặt)
+        // ==========================================
+        // Camera trượt mượt mà theo Player
+        this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
+
+        // Cài đặt tường cản
+        this.obstacleLayer.setCollisionByExclusion([-1]); 
+
+        // Va chạm giữa Người/Quái với Tường cản
+        this.physics.add.collider(this.player, this.obstacleLayer);
+        this.physics.add.collider(this.enemiesGroup, this.obstacleLayer);
+
+        this.isRoomCleared = false;
     }
 
     update() {
