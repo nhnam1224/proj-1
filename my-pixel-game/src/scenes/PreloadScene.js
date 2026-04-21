@@ -35,6 +35,10 @@ export default class PreloadScene extends Phaser.Scene {
 
         // 3. Tải hình kẻ địch, âm thanh, v.v... sau này thêm vào đây
         this.load.spritesheet('arrow', 'characters/soldiers/Arrow(Projectile)/Arrow01(100x100).png', { frameWidth: 100, frameHeight: 100 });
+
+        // map
+        this.load.image('desert_tiles', 'assets/maps/DesertTilemapBlankBackground.png');
+        this.load.tilemapTiledJSON('desert_map', 'assets/maps/desert.json');
     }
     create() {
         // Ngay khi preload() chạy xong 100%, hàm create() sẽ được gọi
